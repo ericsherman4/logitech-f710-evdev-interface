@@ -35,7 +35,8 @@ if not found:
 print("---------------")
 
 print("printing device capabilities")
-for item in dev.capabilities().items():
+for item in dev.capabilities(verbose=True).items():
+    print("")
     print(item) 
 
 print("---------------")
@@ -64,8 +65,8 @@ if g.test_input:
         # mode looks like it switches D -pad with Left joystick in terms of the values that it reads.
         # but on these event is dpad rjoy and ljoy
         if event.type == ecodes.EV_ABS:
-            print(categorize(event))
-
+            # print(categorize(event))
+            print(event)
 
         # none of the buttons are on here
         if event.type == ecodes.EV_REL:

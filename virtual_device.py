@@ -1,5 +1,7 @@
 import evdev
 import atexit
+import sys
+from time import sleep
 from evdev import categorize, ecodes
 
 # plan
@@ -18,6 +20,18 @@ class g:
     joy_name = "Logitech Logitech Cordless RumblePad 2"
     test_input = False
 
+# handle args
+if len(sys.argv) > 1: 
+    first_arg = sys.argv[1].lower()
+    if first_arg == "true":
+        g.test_input = True
+        print("In testing input mode, code will not create a virtual device.")
+    
+if not g.test_input:
+    print("In normal operation mode, code will create a virtual device.")
+sleep(1)
+
+
 dev = None
 found = False
 devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
@@ -35,7 +49,8 @@ if not found:
 print("---------------")
 
 print("printing device capabilities")
-for item in dev.capabilities().items():
+for item in dev.capabilities(verbose=True).items():
+    print("")
     print(item) 
 
 print("---------------")
@@ -48,9 +63,58 @@ dev.grab() # grab the device so no other program can use it.
 # /usr/include/linux/input.h
 # /usr/include/linux/input-event-codes.h
 
-REMAP_DICT = {
-    ecodes.BTN_C : ecodes.BTN_B
+# have a remap dict for keys
+# non-keys are handled in the loop because its mapping abs events to key events
+# in inputs.h the #defines have a hex value associated with them
+# can only use #defines with values that show up in the device capabilities FOR THE VIRTUAL DEVICE
+REMAP_DICT_KEYS = {
+    # A B X Y
+    ecodes.BTN_C : ecodes.BTN_B,
+    ecodes.BTN_X : ecodes.BTN_Y,
+    ecodes.BTN_NORTH : ecodes.BTN_Y,
+    ecodes.BTN_A : ecodes.BTN_X,
+    ecodes.BTN_GAMEPAD : ecodes.BTN_X,
+    ecodes.BTN_SOUTH: ecodes.BTN_X,
+    ecodes.BTN_B : ecodes.BTN_A,
+    ecodes.BTN_EAST : ecodes.BTN_A,
+
+    # L/R joystick press
+    # L joy pres -> BTN_C
+    # R joy pres -> BTN_Z
+    # why? see notes above dict.
+    ecodes.BTN_SELECT : ecodes.BTN_C,
+    ecodes.BTN_START : ecodes.BTN_Z,
+
+
+    # back, start buttons
+    # back button -> select button
+    # why? see notes above dict.
+    ecodes.BTN_TL2 : ecodes.BTN_SELECT,
+    ecodes.BTN_TR2 : ecodes.BTN_START,
+
+
+
+    # RB, RT, LT, LB
+    # RB -> TR
+    # LB -> TL
+    # RT -> TR2
+    # LT -> TL2
+    ecodes.BTN_Z : ecodes.BTN_TR,
+    ecodes.BTN_TR : ecodes.BTN_TR2,
+    ecodes.BTN_TL : ecodes.BTN_TL2,
+    ecodes.BTN_WEST : ecodes.BTN_TL,
+    ecodes.BTN_Y : ecodes.BTN_TL,
 }
+
+# EVENT.TYPE = EV_ABS
+## L and R joystick remain the same
+# LY joystick is ABS_Y
+# LX joystick is ABS_X
+# RY joystick is ABS_RZ
+# RX joystick is ABS_Z
+## DPAD
+# DPAD_UP/DOWN original is ABS_HAT0Y
+# DPAD_LEFT/RIGHT original is ABS_HAT0X
 
 
 if g.test_input:
@@ -64,7 +128,8 @@ if g.test_input:
         # mode looks like it switches D -pad with Left joystick in terms of the values that it reads.
         # but on these event is dpad rjoy and ljoy
         if event.type == ecodes.EV_ABS:
-            print(categorize(event))
+            # print(categorize(event))
+            print(event)
 
 
         # none of the buttons are on here
@@ -74,12 +139,21 @@ if g.test_input:
 else:
     with evdev.UInput.from_device(dev, name="devremap") as ui:
         for event in dev.read_loop():
+
             if event.type == ecodes.EV_KEY:
-                if event.code in REMAP_DICT:
-                    remapped_code = REMAP_DICT[event.code]
+                if event.code in REMAP_DICT_KEYS:
+                    remapped_code = REMAP_DICT_KEYS[event.code]
                     ui.write(ecodes.EV_KEY, remapped_code, event.value)
                 else:
                     ui.write(ecodes.EV_KEY, event.code, event.value)
+
+            # elif event.type == ecodes.EV_ABS:
+            #     if event.code == ecodes.ABS_HAT0Y:
+            #         if event.value == -1:
+            #             print("entered")
+            #             ui.write(ecodes.EV_KEY, ecodes.BTN_DPAD_UP, 1)
+            # doesnt work because DPAD stuff is not within device capabilties. Which is fine IG. 
+
             else:
                 ui.write(event.type, event.code, event.value)
 
