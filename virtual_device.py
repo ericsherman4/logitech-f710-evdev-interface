@@ -16,7 +16,7 @@ class g:
     update_rate = 10 # in hz
     time_to_read = 1 / update_rate
     joy_name = "Logitech Logitech Cordless RumblePad 2"
-    test_input = True
+    test_input = False
 
 dev = None
 found = False
