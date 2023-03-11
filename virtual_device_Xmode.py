@@ -17,7 +17,7 @@ from evdev import categorize, ecodes
 class g:
     update_rate = 10 # in hz
     time_to_read = 1 / update_rate
-    joy_name = "Logitech Logitech Cordless RumblePad 2"
+    joy_name_list = ["Logitech Logitech Cordless RumblePad 2", "Logitech Gamepad F710"]
     test_input = False
 
 # handle args
@@ -37,7 +37,7 @@ found = False
 devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
 for device in devices:
     print(device.path, device.name, device.phys)
-    if(device.name == g.joy_name):
+    if device.name in g.joy_name_list:
         dev = device
         found = True
         print("Found correct controller.")
@@ -57,7 +57,7 @@ print("---------------")
 
 atexit.register(dev.ungrab) #bind the function so its called at program exit
 dev.grab() # grab the device so no other program can use it.
-            # also prevents keyboard from omitting original events?
+            # also prevents device from omitting original events?
 
 # this relies on the following files
 # /usr/include/linux/input.h
@@ -68,53 +68,35 @@ dev.grab() # grab the device so no other program can use it.
 # in inputs.h the #defines have a hex value associated with them
 # can only use #defines with values that show up in the device capabilities FOR THE VIRTUAL DEVICE
 REMAP_DICT_KEYS = {
-    # A B X Y
-    ecodes.BTN_C : ecodes.BTN_B,
-    ecodes.BTN_X : ecodes.BTN_Y,
-    ecodes.BTN_NORTH : ecodes.BTN_Y,
-    ecodes.BTN_A : ecodes.BTN_X,
-    ecodes.BTN_GAMEPAD : ecodes.BTN_X,
-    ecodes.BTN_SOUTH: ecodes.BTN_X,
-    ecodes.BTN_B : ecodes.BTN_A,
-    ecodes.BTN_EAST : ecodes.BTN_A,
-
-    # L/R joystick press
-    # L joy pres -> BTN_C
-    # R joy pres -> BTN_Z
-    # why? see notes above dict.
-    ecodes.BTN_SELECT : ecodes.BTN_C,
-    ecodes.BTN_START : ecodes.BTN_Z,
+    ### A B X Y
+    ecodes.BTN_WEST : ecodes.BTN_NORTH,
+    ecodes.BTN_NORTH : ecodes.BTN_WEST,
 
 
-    # back, start buttons
-    # back button -> select button
-    # why? see notes above dict.
-    ecodes.BTN_TL2 : ecodes.BTN_SELECT,
-    ecodes.BTN_TR2 : ecodes.BTN_START,
+    ### L/R joystick press
+    # rjoy is BTN_THUMBR
+    # ljoy is BTN_THUMBL
 
+    ### back, start buttons
+    # back button is BTN_SELECT
 
-
-    # RB, RT, LT, LB
-    # RB -> TR
-    # LB -> TL
-    # RT -> TR2
-    # LT -> TL2
-    ecodes.BTN_Z : ecodes.BTN_TR,
-    ecodes.BTN_TR : ecodes.BTN_TR2,
-    ecodes.BTN_TL : ecodes.BTN_TL2,
-    ecodes.BTN_WEST : ecodes.BTN_TL,
-    ecodes.BTN_Y : ecodes.BTN_TL,
+    ### RB, LB
+    # RB is BTN_TR
+    # LB is BTN_TL
 }
 
 # EVENT.TYPE = EV_ABS
 ## L and R joystick remain the same
 # LY joystick is ABS_Y
 # LX joystick is ABS_X
-# RY joystick is ABS_RZ
-# RX joystick is ABS_Z
+# RY joystick is ABS_RX
+# RX joystick is ABS_RY
 ## DPAD
 # DPAD_UP/DOWN original is ABS_HAT0Y
 # DPAD_LEFT/RIGHT original is ABS_HAT0X
+## RT and LT
+# RT is ABS_RZ
+# LT is ABS_Z
 
 
 if g.test_input:
@@ -128,8 +110,8 @@ if g.test_input:
         # mode looks like it switches D -pad with Left joystick in terms of the values that it reads.
         # but on these event is dpad rjoy and ljoy
         if event.type == ecodes.EV_ABS:
-            # print(categorize(event))
-            print(event)
+            print(categorize(event))
+            # print(event)
 
 
         # none of the buttons are on here
