@@ -69,8 +69,12 @@ dev.grab() # grab the device so no other program can use it.
 # can only use #defines with values that show up in the device capabilities FOR THE VIRTUAL DEVICE
 REMAP_DICT_KEYS = {
     ### A B X Y
-    ecodes.BTN_WEST : ecodes.BTN_NORTH,
-    ecodes.BTN_NORTH : ecodes.BTN_WEST,
+    # the direction is wrong like west vs north but i cant fix it without swapping
+    # x and y for some reason
+    # ecodes.BTN_Y : ecodes.BTN_X,
+    # ecodes.BTN_X : ecodes.BTN_Y,
+    # ecodes.BTN_WEST : ecodes.BTN_NORTH,
+    # ecodes.BTN_NORTH : ecodes.BTN_WEST,
 
 
     ### L/R joystick press
